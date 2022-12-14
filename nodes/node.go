@@ -4,45 +4,64 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 )
 
-type InstantiableNode interface {
+type LiveNode interface {
 	Init()
-	Draw(screen *ebiten.Image)
 	Update()
-	DrawChild(screen *ebiten.Image)
-	UpdateChild()
-	AddChild(child InstantiableNode)
-	GetParent() *InstantiableNode
-	SetParent(child *InstantiableNode)
+	Draw(screen *ebiten.Image)
+	GetName() string
+
+	GetParent() LiveNode
+	setParent(parent LiveNode)
+	GetChildren() []LiveNode
+	AddChild(child LiveNode)
+
+	setNodeRoot(root LiveNode)
+	setName(name string)
 }
 
 type Node struct {
-	Children []InstantiableNode
-	Parent   *InstantiableNode
+	LiveNode
+	Type     string
+	Name     string
+	Children []LiveNode
+	Parent   LiveNode
+	NodeRoot LiveNode
 }
 
-func (n *Node) UpdateChild() {
-	for _, child := range n.Children {
-		child.Update()
-		child.UpdateChild()
+func (n *Node) Init() {}
+func (n *Node) Update() {
+	for _, children := range n.Children {
+		children.Update()
 	}
 }
-
-func (n *Node) DrawChild(screen *ebiten.Image) {
-	for _, child := range n.Children {
-		child.Draw(screen)
-		child.DrawChild(screen)
+func (n *Node) Draw(screen *ebiten.Image) {
+	for _, children := range n.Children {
+		children.Draw(screen)
 	}
 }
+func (n *Node) GetName() string {
+	return n.Name
+}
+func (n *Node) setName(name string) {
+	n.Name = name
+}
 
-func (n *Node) AddChild(child InstantiableNode) {
+func (n *Node) setParent(parent LiveNode) {
+	n.Parent = parent
+}
+func (n *Node) GetParent() LiveNode {
+	return n.Parent
+}
+func (n *Node) GerChildren() []LiveNode {
+	return n.Children
+}
+func (n *Node) AddChild(child LiveNode) {
+	child.setNodeRoot(child)
 	child.Init()
+	child.setParent(n.NodeRoot)
 	n.Children = append(n.Children, child)
 }
 
-func (n *Node) GetParent() *InstantiableNode {
-	return n.Parent
-}
-
-func (n *Node) SetParent(parent *InstantiableNode) {
-	n.Parent = parent
+func (n *Node) setNodeRoot(root LiveNode) {
+	n.NodeRoot = root
 }

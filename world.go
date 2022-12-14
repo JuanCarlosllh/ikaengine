@@ -8,7 +8,7 @@ import (
 
 type World struct {
 	GameConfig *GameConfig
-	Children   []nodes.InstantiableNode
+	Children   []nodes.LiveNode
 }
 
 func (w *World) Init() {

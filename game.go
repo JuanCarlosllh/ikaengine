@@ -30,13 +30,12 @@ type GameConfig struct {
 
 type Game struct {
 	*GameConfig
-	Children []nodes.InstantiableNode
+	Children []nodes.LiveNode
 }
 
 func (g *Game) Update() error {
 	for _, children := range g.Children {
 		children.Update()
-		children.UpdateChild()
 	}
 	return nil
 }
@@ -47,7 +46,6 @@ func (g *Game) Draw(screen *ebiten.Image) {
 	}
 	for _, children := range g.Children {
 		children.Draw(screen)
-		children.DrawChild(screen)
 	}
 }
 
