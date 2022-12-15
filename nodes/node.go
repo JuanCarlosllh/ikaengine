@@ -1,9 +1,10 @@
 package nodes
 
 import (
-	"fmt"
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/juancarlosllh/ikaengine/signals"
+	"reflect"
+	"strings"
 )
 
 type LiveNode interface {
@@ -28,13 +29,13 @@ type Node struct {
 
 	Type     string
 	Name     string
+	ID       uint
 	Children []LiveNode
 	Parent   LiveNode
 	NodeRoot LiveNode
 }
 
 func (n *Node) Init() {
-	fmt.Println("INIT", n.Name)
 	for _, child := range n.Children {
 		child.setNodeRoot(child)
 		child.setParent(n.NodeRoot)
@@ -87,4 +88,23 @@ func (n *Node) setParent(parent LiveNode) {
 
 func (n *Node) setNodeRoot(root LiveNode) {
 	n.NodeRoot = root
+}
+
+type NewNodeArgs struct {
+	Name     string
+	Node     LiveNode
+	Children []LiveNode
+}
+
+func NewNode(nodeArgs NewNodeArgs) LiveNode {
+
+	t := reflect.TypeOf(nodeArgs.Node)
+	structNameTokens := strings.SplitAfter(t.String(), ".")
+	nodeType := structNameTokens[len(structNameTokens)-1]
+
+	rootNode := nodeArgs.Node.GetNode()
+	rootNode.Name = nodeArgs.Name
+	rootNode.Children = nodeArgs.Children
+	rootNode.GetNode().Type = nodeType
+	return nodeArgs.Node
 }

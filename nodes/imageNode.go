@@ -29,6 +29,5 @@ func (n *ImageNode) Draw(screen *ebiten.Image) {
 		drawPosition.Y = parent.GetPosition().Y + n.Position.Y
 	}
 	op.GeoM.Translate(drawPosition.X, drawPosition.Y)
-	//fmt.Println("Draw", n.GetName(), drawPosition)
 	screen.DrawImage(n.img, op)
 }
