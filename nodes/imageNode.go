@@ -23,11 +23,12 @@ func (n *ImageNode) Init() {
 
 func (n *ImageNode) Draw(screen *ebiten.Image) {
 	op := &ebiten.DrawImageOptions{}
+	drawPosition := n.Position
 	if parent, ok := n.GetParent().(Node2DInterface); ok {
-		op.GeoM.Translate(parent.GetPosition().X+n.Position.X, parent.GetPosition().Y+n.Position.Y)
-	} else {
-		op.GeoM.Translate(n.Position.X, n.Position.Y)
+		drawPosition.X = parent.GetPosition().X + n.Position.X
+		drawPosition.Y = parent.GetPosition().Y + n.Position.Y
 	}
+	op.GeoM.Translate(drawPosition.X, drawPosition.Y)
+	//fmt.Println("Draw", n.GetName(), drawPosition)
 	screen.DrawImage(n.img, op)
-	n.Node.Draw(screen)
 }

@@ -1,14 +1,37 @@
 package ikaengine
 
 import (
+	"fmt"
 	"github.com/hajimehoshi/ebiten/v2"
+	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
 	"github.com/juancarlosllh/ikaengine/nodes"
 	"log"
 )
 
+type WindowSize struct {
+	Width  int
+	Height int
+}
+
+type InternalResolution struct {
+	Width  int
+	Height int
+}
+
+type DebugConfig struct {
+	DisplayFps bool
+}
+
+type GameConfig struct {
+	WindowTitle        string
+	WindowSize         WindowSize
+	InternalResolution InternalResolution
+	DebugConfig        DebugConfig
+}
+
 type World struct {
-	GameConfig *GameConfig
-	Children   []nodes.LiveNode
+	*GameConfig
+	Children []nodes.LiveNode
 }
 
 func (w *World) Init() {
@@ -29,16 +52,32 @@ func (w *World) Init() {
 	ebiten.SetWindowSize(config.WindowSize.Width, config.WindowSize.Height)
 	ebiten.SetWindowTitle(config.WindowTitle)
 
-	var game = &Game{
-		GameConfig: config,
-		Children:   w.Children,
-	}
-
 	for _, children := range w.Children {
+		children.GetNode().Init()
 		children.Init()
 	}
 
-	if err := ebiten.RunGame(game); err != nil {
+	if err := ebiten.RunGame(w); err != nil {
 		log.Fatal(err)
 	}
+}
+
+func (w *World) Update() error {
+	for _, children := range w.Children {
+		children.GetNode().Update()
+	}
+	return nil
+}
+
+func (w *World) Draw(screen *ebiten.Image) {
+	if w.DebugConfig.DisplayFps {
+		ebitenutil.DebugPrint(screen, fmt.Sprintf("%.0f", ebiten.ActualTPS()))
+	}
+	for _, children := range w.Children {
+		children.GetNode().Draw(screen)
+	}
+}
+
+func (w *World) Layout(outsideWidth, outsideHeight int) (screenWidth, screenHeight int) {
+	return w.InternalResolution.Width, w.InternalResolution.Height
 }
