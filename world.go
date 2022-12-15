@@ -31,7 +31,7 @@ type GameConfig struct {
 
 type World struct {
 	*GameConfig
-	Children []nodes.LiveNode
+	MainNode nodes.LiveNode
 }
 
 func (w *World) Init() {
@@ -52,9 +52,12 @@ func (w *World) Init() {
 	ebiten.SetWindowSize(config.WindowSize.Width, config.WindowSize.Height)
 	ebiten.SetWindowTitle(config.WindowTitle)
 
-	for _, children := range w.Children {
-		children.GetNode().Init()
+	w.MainNode.GetNode().Init()
+	
+	fmt.Println(w.MainNode.GetNode().NodeRoot)
+	for _, children := range w.MainNode.GetChildren() {
 		children.Init()
+		children.GetNode().RootInit()
 	}
 
 	if err := ebiten.RunGame(w); err != nil {
@@ -63,9 +66,8 @@ func (w *World) Init() {
 }
 
 func (w *World) Update() error {
-	for _, children := range w.Children {
-		children.GetNode().Update()
-	}
+	w.MainNode.Update()
+	w.MainNode.GetNode().RootUpdate()
 	return nil
 }
 
@@ -73,9 +75,8 @@ func (w *World) Draw(screen *ebiten.Image) {
 	if w.DebugConfig.DisplayFps {
 		ebitenutil.DebugPrint(screen, fmt.Sprintf("%.0f", ebiten.ActualTPS()))
 	}
-	for _, children := range w.Children {
-		children.GetNode().Draw(screen)
-	}
+	w.MainNode.Draw(screen)
+	w.MainNode.GetNode().RootDraw(screen)
 }
 
 func (w *World) Layout(outsideWidth, outsideHeight int) (screenWidth, screenHeight int) {

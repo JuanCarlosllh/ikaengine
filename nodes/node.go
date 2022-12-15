@@ -8,15 +8,25 @@ import (
 )
 
 type LiveNode interface {
+	// Life Cycel
 	Init()
 	Update()
 	Draw(screen *ebiten.Image)
+	RootInit()
+	RootUpdate()
+	RootDraw(screen *ebiten.Image)
+
+	// Node Properties
 	GetName() string
 
+	// Structure
 	GetParent() LiveNode
 	GetChildren() []LiveNode
 	AddChild(child LiveNode)
 	GetNode() *Node
+
+	// Signals
+	EmitSignal()
 
 	setParent(parent LiveNode)
 	setNodeRoot(root LiveNode)
@@ -35,29 +45,35 @@ type Node struct {
 	NodeRoot LiveNode
 }
 
-func (n *Node) Init() {
+// Life cycle
+func (n *Node) Init()                     {}
+func (n *Node) Update()                   {}
+func (n *Node) Draw(screen *ebiten.Image) {}
+
+func (n *Node) RootInit() {
 	for _, child := range n.Children {
-		child.setNodeRoot(child)
 		child.setParent(n.NodeRoot)
-		child.GetNode().Init()
+		child.GetNode().RootInit()
 		child.Init()
 	}
 }
 
-func (n *Node) Update() {
+func (n *Node) RootUpdate() {
 	for _, children := range n.Children {
-		children.GetNode().Update()
+		children.GetNode().RootUpdate()
 		children.Update()
 	}
 }
-func (n *Node) Draw(screen *ebiten.Image) {
+func (n *Node) RootDraw(screen *ebiten.Image) {
 	for _, children := range n.Children {
-		children.GetNode().Draw(screen)
+		children.GetNode().RootDraw(screen)
 		children.Draw(screen)
 	}
 }
 
+// Structure
 func (n *Node) AddChild(child LiveNode) {
+	child.GetNode().RootInit()
 	child.Init()
 	n.Children = append(n.Children, child)
 }
@@ -78,6 +94,15 @@ func (n *Node) GetNode() *Node {
 	return n
 }
 
+// Signals
+func (n *Node) EmitSignal() {
+	signals.EventStream.Notify(signals.KeyPressSignal{
+		Key:     "a",
+		Pressed: true,
+	})
+}
+
+// private
 func (n *Node) setName(name string) {
 	n.Name = name
 }
@@ -96,6 +121,7 @@ type NewNodeArgs struct {
 	Children []LiveNode
 }
 
+// Global functions and utilities
 func NewNode(nodeArgs NewNodeArgs) LiveNode {
 
 	t := reflect.TypeOf(nodeArgs.Node)
@@ -103,8 +129,10 @@ func NewNode(nodeArgs NewNodeArgs) LiveNode {
 	nodeType := structNameTokens[len(structNameTokens)-1]
 
 	rootNode := nodeArgs.Node.GetNode()
+	rootNode.NodeRoot = nodeArgs.Node
 	rootNode.Name = nodeArgs.Name
 	rootNode.Children = nodeArgs.Children
-	rootNode.GetNode().Type = nodeType
+	rootNode.Type = nodeType
+
 	return nodeArgs.Node
 }

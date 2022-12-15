@@ -22,6 +22,7 @@ func (n *ImageNode) Init() {
 }
 
 func (n *ImageNode) Draw(screen *ebiten.Image) {
+
 	op := &ebiten.DrawImageOptions{}
 	drawPosition := n.Position
 	if parent, ok := n.GetParent().(Node2DInterface); ok {
