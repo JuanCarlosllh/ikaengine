@@ -2,55 +2,56 @@ package nodes
 
 import (
 	"github.com/hajimehoshi/ebiten/v2"
-	"github.com/juancarlosllh/ikaengine/signals"
 	"reflect"
 	"strings"
 )
 
-type LiveNode interface {
+type Node interface {
 	// Life Cycel
 	Init()
 	Update()
 	Draw(screen *ebiten.Image)
+	Input()
+
+	// NodeComponent internal live cycle
 	RootInit()
 	RootUpdate()
 	RootDraw(screen *ebiten.Image)
+	RootInput()
 
-	// Node Properties
+	// NodeComponent Properties
 	GetName() string
 
 	// Structure
-	GetParent() LiveNode
-	GetChildren() []LiveNode
-	AddChild(child LiveNode)
-	GetNode() *Node
+	GetParent() Node
+	GetChildren() []Node
+	AddChild(child Node)
+	GetNode() *NodeComponent
 
-	setParent(parent LiveNode)
-	setNodeRoot(root LiveNode)
+	setParent(parent Node)
+	setNodeRoot(root Node)
 	setName(name string)
 }
 
-type Node struct {
-	LiveNode
+type NodeComponent struct {
+	Node
 
 	Type string
 	Name string
 	ID   uint
 
-	Children []LiveNode
-	Parent   LiveNode
-	NodeRoot LiveNode
-
-	connectedSignals map[string]func(signal signals.Signal[any])
+	Children []Node
+	Parent   Node
+	NodeRoot Node
 }
 
 // Life cycle
-func (n *Node) Init()                     {}
-func (n *Node) Update()                   {}
-func (n *Node) Draw(screen *ebiten.Image) {}
+func (n *NodeComponent) Init()                     {}
+func (n *NodeComponent) Update()                   {}
+func (n *NodeComponent) Draw(screen *ebiten.Image) {}
+func (n *NodeComponent) Input()                    {}
 
-func (n *Node) RootInit() {
-	n.connectedSignals = make(map[string]func(signals.Signal[any]))
+func (n *NodeComponent) RootInit() {
 	for _, child := range n.Children {
 		child.setParent(n.NodeRoot)
 		child.GetNode().RootInit()
@@ -58,64 +59,72 @@ func (n *Node) RootInit() {
 	}
 }
 
-func (n *Node) RootUpdate() {
+func (n *NodeComponent) RootUpdate() {
 	for _, children := range n.Children {
 		children.GetNode().RootUpdate()
 		children.Update()
 	}
 }
-func (n *Node) RootDraw(screen *ebiten.Image) {
+
+func (n *NodeComponent) RootDraw(screen *ebiten.Image) {
 	for _, children := range n.Children {
 		children.GetNode().RootDraw(screen)
 		children.Draw(screen)
 	}
 }
 
+func (n *NodeComponent) RootInput() {
+	for _, children := range n.Children {
+		children.GetNode().RootInput()
+		children.RootInput()
+	}
+}
+
 // Structure
-func (n *Node) AddChild(child LiveNode) {
+func (n *NodeComponent) AddChild(child Node) {
 	child.GetNode().RootInit()
 	child.Init()
 	child.setParent(n.GetNode().NodeRoot)
 	n.Children = append(n.Children, child)
 }
 
-func (n *Node) GetName() string {
+func (n *NodeComponent) GetName() string {
 	return n.Name
 }
 
-func (n *Node) GetParent() LiveNode {
+func (n *NodeComponent) GetParent() Node {
 	return n.Parent
 }
 
-func (n *Node) GetChildren() []LiveNode {
+func (n *NodeComponent) GetChildren() []Node {
 	return n.Children
 }
 
-func (n *Node) GetNode() *Node {
+func (n *NodeComponent) GetNode() *NodeComponent {
 	return n
 }
 
 // private
-func (n *Node) setName(name string) {
+func (n *NodeComponent) setName(name string) {
 	n.Name = name
 }
 
-func (n *Node) setParent(parent LiveNode) {
+func (n *NodeComponent) setParent(parent Node) {
 	n.Parent = parent
 }
 
-func (n *Node) setNodeRoot(root LiveNode) {
+func (n *NodeComponent) setNodeRoot(root Node) {
 	n.NodeRoot = root
 }
 
 type NewNodeArgs struct {
 	Name     string
-	Node     LiveNode
-	Children []LiveNode
+	Node     Node
+	Children []Node
 }
 
 // Global functions and utilities
-func NewNode(nodeArgs NewNodeArgs) LiveNode {
+func NewNode(nodeArgs NewNodeArgs) Node {
 
 	t := reflect.TypeOf(nodeArgs.Node)
 	structNameTokens := strings.SplitAfter(t.String(), ".")

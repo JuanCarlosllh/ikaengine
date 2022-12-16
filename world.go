@@ -31,7 +31,7 @@ type GameConfig struct {
 
 type World struct {
 	*GameConfig
-	MainNode nodes.LiveNode
+	MainNode nodes.Node
 }
 
 func (w *World) Init() {
@@ -62,6 +62,8 @@ func (w *World) Init() {
 func (w *World) Update() error {
 	w.MainNode.Update()
 	w.MainNode.GetNode().RootUpdate()
+
+	Input.Update()
 	return nil
 }
 

@@ -7,7 +7,7 @@ import (
 )
 
 type ImageNode struct {
-	Node
+	NodeComponent
 	Node2D
 	Path string
 	img  *ebiten.Image
