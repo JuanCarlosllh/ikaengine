@@ -52,13 +52,7 @@ func (w *World) Init() {
 	ebiten.SetWindowSize(config.WindowSize.Width, config.WindowSize.Height)
 	ebiten.SetWindowTitle(config.WindowTitle)
 
-	w.MainNode.GetNode().Init()
-	
-	fmt.Println(w.MainNode.GetNode().NodeRoot)
-	for _, children := range w.MainNode.GetChildren() {
-		children.Init()
-		children.GetNode().RootInit()
-	}
+	w.MainNode.Init()
 
 	if err := ebiten.RunGame(w); err != nil {
 		log.Fatal(err)

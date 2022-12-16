@@ -25,9 +25,6 @@ type LiveNode interface {
 	AddChild(child LiveNode)
 	GetNode() *Node
 
-	// Signals
-	EmitSignal()
-
 	setParent(parent LiveNode)
 	setNodeRoot(root LiveNode)
 	setName(name string)
@@ -35,14 +32,16 @@ type LiveNode interface {
 
 type Node struct {
 	LiveNode
-	signals.Observer
 
-	Type     string
-	Name     string
-	ID       uint
+	Type string
+	Name string
+	ID   uint
+
 	Children []LiveNode
 	Parent   LiveNode
 	NodeRoot LiveNode
+
+	connectedSignals map[string]func(signal signals.Signal[any])
 }
 
 // Life cycle
@@ -51,6 +50,7 @@ func (n *Node) Update()                   {}
 func (n *Node) Draw(screen *ebiten.Image) {}
 
 func (n *Node) RootInit() {
+	n.connectedSignals = make(map[string]func(signals.Signal[any]))
 	for _, child := range n.Children {
 		child.setParent(n.NodeRoot)
 		child.GetNode().RootInit()
@@ -75,6 +75,7 @@ func (n *Node) RootDraw(screen *ebiten.Image) {
 func (n *Node) AddChild(child LiveNode) {
 	child.GetNode().RootInit()
 	child.Init()
+	child.setParent(n.GetNode().NodeRoot)
 	n.Children = append(n.Children, child)
 }
 
@@ -92,14 +93,6 @@ func (n *Node) GetChildren() []LiveNode {
 
 func (n *Node) GetNode() *Node {
 	return n
-}
-
-// Signals
-func (n *Node) EmitSignal() {
-	signals.EventStream.Notify(signals.KeyPressSignal{
-		Key:     "a",
-		Pressed: true,
-	})
 }
 
 // private
@@ -131,8 +124,11 @@ func NewNode(nodeArgs NewNodeArgs) LiveNode {
 	rootNode := nodeArgs.Node.GetNode()
 	rootNode.NodeRoot = nodeArgs.Node
 	rootNode.Name = nodeArgs.Name
-	rootNode.Children = nodeArgs.Children
 	rootNode.Type = nodeType
+
+	for _, child := range nodeArgs.Children {
+		nodeArgs.Node.AddChild(child)
+	}
 
 	return nodeArgs.Node
 }

@@ -1,29 +1,45 @@
 package signals
 
-type Notifier interface {
-	Register(Observer)
-	Unregister(Observer)
-	Notify(KeyPressSignal)
+type Signal[T any] struct {
+	Type string
+	Data T
 }
 
-type GlobalNotifier struct {
-	Observers map[Observer]struct{}
+type Notifier[T interface{}] interface {
+	Register(Observer[T])
+	Unregister(Observer[T])
+	Notify(e Signal[T])
 }
 
-func (n *GlobalNotifier) Register(o Observer) {
-	n.Observers[o] = struct{}{}
+type NotifierComponent[T any] struct {
+	observers map[Observer[T]]struct{}
 }
 
-func (n *GlobalNotifier) Unregister(o Observer) {
-	delete(n.Observers, o)
+func (n *NotifierComponent[T]) Register(o Observer[T]) {
+	n.observers[o] = struct{}{}
 }
 
-func (n *GlobalNotifier) Notify(e KeyPressSignal) {
-	for o := range n.Observers {
-		o.OnNotify(e)
+func (n *NotifierComponent[T]) Unregister(o Observer[T]) {
+	delete(n.observers, o)
+}
+
+func (n *NotifierComponent[T]) Notify(e Signal[T]) {
+	for o := range n.observers {
+		if o != nil && o.GetConnectedSignals()[e.Type] != nil {
+			o.OnNotify(e)
+		}
 	}
 }
 
-var EventStream = GlobalNotifier{
-	Observers: map[Observer]struct{}{},
+func NewNotifier[T any]() Notifier[T] {
+	return &NotifierComponent[T]{
+		observers: make(map[Observer[T]]struct{}),
+	}
+}
+
+func NewSignal[T any](signalType string, data T) Signal[T] {
+	return Signal[T]{
+		Type: signalType,
+		Data: data,
+	}
 }
